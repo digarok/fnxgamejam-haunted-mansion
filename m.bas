@@ -1,22 +1,17 @@
 5 REM - Haunted Mansion by Dagen Brock
-6 graphics = false
 
-10 loc_cnt=9 : dim loc$(loc_cnt) : dim loc_exit(loc_cnt,6) : dim loc_desc$(loc_cnt) : dim loc_desc2$(loc_cnt)
-20 obj_cnt = 4 : dim obj_desc$(obj_cnt) : dim obj_loc(obj_cnt)
+10 cls: prompt_options()
+20 loc_cnt=9 : dim loc$(loc_cnt) : dim loc_exit(loc_cnt,6) : dim loc_desc$(loc_cnt) : dim loc_desc2$(loc_cnt)
+25 obj_cnt = 4 : dim obj_desc$(obj_cnt) : dim obj_loc(obj_cnt)
+
 30 restore
 50 init_display()
-55 if graphics then gfx_title()
+55 if graphics_on then gfx_title()
 60 print "Welcome to the Haunted Mansion" : print "": print ""
-
 
 70 player_loc = 1 : player_alive = true : player_hidden = false : player_win = false
 75 wolf_act = true : ghost_act = true : fridge_open = false : lamp_lit = false
 80 set_locations() : set_objects()
-
-
-
-rem 91 obj_loc(3) =0
-
 
 
 rem Main loop - input & parsing
@@ -54,7 +49,7 @@ REM note we check many alternates
 
 
 
-290 if valid_cmd = false then print "What do you mean?"
+290 if valid_cmd = false then print "What do you mean?" :print  ""
 300 goto 100
 
 
@@ -114,8 +109,9 @@ REM ************************************* cmd_go()
 REM ************************************* cmd_look_objects()
 700 proc cmd_look_objects()
 701 valid_cmd = true
+705 found_obj = false
 710 for i=1 TO obj_cnt
-720 if obj_loc(i)=player_loc then print "You see "; obj_desc$(i) 
+720 if obj_loc(i)=player_loc then print "  You see "; obj_desc$(i) :print ""
 730 next
 740 endproc
 
@@ -141,9 +137,9 @@ REM ************************************* cmd_drop_object()
 905 identify_object_strings()
 906 if obj = 2 then if lamp_lit = true then print "You can't drop a lit lamp!": goto 935
 910 if obj_loc(obj) = 0 
-915  obj_loc(obj) = player_loc : print "You have tossed aside "; obj_desc$(obj); "."
+915  obj_loc(obj) = player_loc : print "  You have tossed aside "; obj_desc$(obj); "." : print ""
 920 else
-925  print "You don't have that object."
+925  print "You don't have that object.": print ""
 930 endif
 935 endproc
  
@@ -154,11 +150,11 @@ REM ************************************* cmd_take_object()
 955 identify_object_strings()
 REM the above sets `obj` to object number in string or 0
 960 if obj_loc(obj) = player_loc
-963  obj_loc(obj) = 0 : print "You have picked up "; obj_desc$(obj)
+963  obj_loc(obj) = 0 : print "  You have picked up "; obj_desc$(obj) : print ""
 964  if obj = 3 then loc_desc2$(player_loc) = "It smells and there's an empty open fridge. The foyer is west."
 965  if obj = 1 
-966   print "": print "   You got the KEY!":print "": print "As you pick it up the storm lessens and the house feels a little less gloomy."
-967   print "You only need to go out the front door to finally escape this trap of a house."
+966   print "": print "  YES, You got the KEY!":print "": print "As you pick it up the storm lessens and the house feels a little less gloomy."
+967   print "": print "You only need to go out the front door to finally escape this trap of a house." : print ""
 968   ghost_act = false : loc_desc2$(1) = "Stairs lead to a second floor, the door out is south, but it's still locked!"
 969  endif
 970 else
@@ -174,7 +170,7 @@ REM ************************************* cmd_open_fridge
 1020  print "What fridge are you talking about?"
 1030 else
 1040  print "You've done it!  You opened the fridge!" : print ""
-1041  print "Thankfully, the smell wasn't coming from in there."
+1041  print "Thankfully, the smell wasn't coming from in there.": print ""
 1045  loc_desc2$(player_loc) = "It stinks in here. There's a nice looking raw steak inside of the fridge."
 1050  obj_loc(3) = 2 : fridge_open = true
 1060 endif
@@ -187,7 +183,7 @@ REM ************************************* cmd_light_lamp
 1110 lamp_lit = true
 1120 loc_desc2$(1) = "Stairs lead to a second floor, and with your lit lamp you can make your way up!"
 1130 loc_exit(1,4) = 5 :rem upstairs hallway
-1140 print "Your lamp is lit! You feel a little less afraid."
+1140 print "  Your lamp is lit! You feel a little less afraid.": print ""
 1150 endproc
 
 
@@ -212,9 +208,9 @@ REM ************************************* cmd_run()
 1310 if ghost_act = false then print "You don't need to do that." : goto 1350
 1311 if player_loc < 5 then print "There's no need." : goto 1350
 1312 if player_loc >8 then print "That won't help here." : goto 1350
-1320 print "" : print "You bravely run away!" : print "Panting and out of breath, you're back at the bottom of the stairs."
+1320 print "" : print "You bravely run away!" : print "" :print "Panting and out of breath, you're back at the bottom of the stairs."
 1321 print "" : print "You're safe here, but you still can't unlock the front door so you should"
-1322 print "consider working up the courage to explore more upstairs."
+1322 print "consider working up the courage to explore more upstairs.": print ""
 1330 player_loc = 1
 1350 endproc
 
@@ -225,14 +221,14 @@ REM ************************************* cmd_unlock()
 1405 print ""
 1410 if obj_loc(1) <> 0 then print "You don't have a key." : goto 1450
 1411 if player_loc <> 1 then print "Unlock what?  Maybe this isn't the place" : goto 1450
-1420 print "Without a moment of hesitation, you unlock the door. Freedom feels close."
+1420 print "Without a moment of hesitation, you unlock the door. Freedom feels close.": print ""
 1430 loc_exit(1,1) = 10
 1440 loc_desc2$(1) = "Stairs lead to a second floor, but the south exit door is unlocked!"
 1450 endproc
 
 
 2000 proc display_room()
-2010 print "" : cprint chr$(16);chr$(17); chr$(18); chr$(19); chr$(20); : print " ";loc$(player_loc)
+2010 box_string(loc$(player_loc))
 2020 print "" : print "You are in "; loc_desc$(player_loc) : print "": print loc_desc2$(player_loc)
 2030 if player_loc = 9 then handle_wolf()
 2040 if player_loc >= 5 then if player_loc <= 8 then handle_ghost()
@@ -366,3 +362,25 @@ REM ************************************* gfx_title()
 6090 poke 1,0:poke $d103,$03
 6095 cls: for i=1 to 64: print "" : next
 6100 endproc
+
+REM ************************************* box_string(s$)
+7000 proc box_string(s$)
+7010 l = len(s$)
+7020 cprint chr$($a9);: for i = 0 to l+1 : cprint chr$($ad); : next : cprint chr$($aa)
+7030 cprint chr$($ae); " "; s$; " "; chr$($ae)
+7040 cprint chr$($ab);: for i = 0 to l+1 : cprint chr$($ad); : next : cprint chr$($ac)
+7100 endproc
+
+REM ************************************* prompt_options()
+9000 proc prompt_options()
+9010 print "":print "":print spc(15);:input "Would you like graphics? (y/N)",in$
+9020 if in$ = "y" then graphics_on = true
+9025 print "":print spc(20); "Graphics: ";
+9026 if graphics_on then print "on"
+9027 if graphics_on = false then print "off"
+9030 print "":print spc(16);:input "Would you like sound? (y/N)",in$
+9040 if in$ = "y" then sound_on = true
+9045 print "":print spc(20); "Sound: ";
+9046 if sound_on then print "on"
+9027 if sound_on = false then print "off"
+9050 endproc
