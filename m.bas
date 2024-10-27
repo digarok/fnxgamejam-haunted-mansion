@@ -9,7 +9,7 @@
 60 print "Welcome to the Haunted Mansion" : print "": print ""
 
 
-70 player_loc = 1 : player_alive = true : player_hidden = false
+70 player_loc = 1 : player_alive = true : player_hidden = false : player_win = false
 75 wolf_act = true : ghost_act = true : fridge_open = false : lamp_lit = false
 80 set_locations() : set_objects()
 
@@ -20,7 +20,8 @@ rem 91 obj_loc(3) =0
 
 
 rem Main loop - input & parsing
-100 display_room()
+100 if player_win = true then goto 320
+105 display_room()
 110 if player_alive = false then goto 350
 120 print "" : input "> "; in$ : print ""
 130 valid_cmd = false
@@ -41,6 +42,7 @@ REM note we check many alternates
 181 if left$(in$,5) = "throw" then cmd_drop_object()
 190 if left$(in$,4) = "help" then cmd_help()
 191 if left$(in$,1) = "?" then cmd_help()
+200 if left$(in$,6) = "unlock" then cmd_unlock()
 210 if in$ = "open fridge" then cmd_open_fridge()
 220 if in$ = "light lamp" then cmd_light_lamp()
 221 if in$ = "turn on lamp" then cmd_light_lamp()
@@ -54,6 +56,14 @@ REM note we check many alternates
 
 290 if valid_cmd = false then print "What do you mean?"
 300 goto 100
+
+
+REM ************ player win
+320 print "": print "You are free.": print ""
+330 input "Would you like to play again? (y/n) "; in$ : print ""
+340 if in$ = "y" then goto 30
+345 print "": print "Goodbye!" : end
+
 
 REM ************ player death
 350 print "": print "You are dead.": print ""
@@ -95,6 +105,7 @@ REM ************************************* cmd_go()
 555  player_loc = buf
 556  if player_loc = 9 then wolf_steps = 3 
 557  player_hidden = false
+558  if player_loc = 10 then player_win = true
 560 else 
 565  print "You cannot go in that direction."
 570 endif
@@ -146,9 +157,9 @@ REM the above sets `obj` to object number in string or 0
 963  obj_loc(obj) = 0 : print "You have picked up "; obj_desc$(obj)
 964  if obj = 3 then loc_desc2$(player_loc) = "It smells and there's an empty open fridge. The foyer is west."
 965  if obj = 1 
-966   print "You got the KEY! As you pick it up the storm lessens and the house feels a little less gloomy."
+966   print "": print "   You got the KEY!":print "": print "As you pick it up the storm lessens and the house feels a little less gloomy."
 967   print "You only need to go out the front door to finally escape this trap of a house."
-968   ghost_act = false
+968   ghost_act = false : loc_desc2$(1) = "Stairs lead to a second floor, the door out is south, but it's still locked!"
 969  endif
 970 else
 975   print "You don't see that object in here." 
@@ -172,6 +183,7 @@ REM ************************************* cmd_open_fridge
 REM ************************************* cmd_light_lamp
 1100 proc cmd_light_lamp()
 1101 valid_cmd = true
+1105 if obj_loc(2) <> 0 then print "You don't have one." : goto 1150
 1110 lamp_lit = true
 1120 loc_desc2$(1) = "Stairs lead to a second floor, and with your lit lamp you can make your way up!"
 1130 loc_exit(1,4) = 5 :rem upstairs hallway
@@ -179,17 +191,13 @@ REM ************************************* cmd_light_lamp
 1150 endproc
 
 
-REM ************************************* cmd_run()
-1200 proc cmd_run()
-1201 valid_cmd = true
-
-1250 endproc
-
 
 REM ************************************* cmd_hide()
 1200 proc cmd_hide()
 1201 valid_cmd = true
-1210 if player_loc < 6 then if player_loc >8 then if ghost_act = false then print "There's nowhere to hide in this area." : goto 1250
+1210 if player_loc < 6 then print "There's nowhere to hide in this area." : goto 1280
+1211 if player_loc >8 then print "That won't help you here." : goto 1280
+1212 if ghost_act = false then print "There's no need." : goto 1280
 1220 player_hidden = true
 1230 if player_loc = 8 
 1240  print "You've found a spot in-between a stack of boxes to hide."
@@ -197,6 +205,30 @@ REM ************************************* cmd_hide()
 1260  print "You dive under the bed as quitely as you can and hide in the darkess."
 1270 endif
 1280 endproc
+
+REM ************************************* cmd_run()
+1300 proc cmd_run()
+1301 valid_cmd = true
+1310 if ghost_act = false then print "You don't need to do that." : goto 1350
+1311 if player_loc < 5 then print "There's no need." : goto 1350
+1312 if player_loc >8 then print "That won't help here." : goto 1350
+1320 print "" : print "You bravely run away!" : print "Panting and out of breath, you're back at the bottom of the stairs."
+1321 print "" : print "You're safe here, but you still can't unlock the front door so you should"
+1322 print "consider working up the courage to explore more upstairs."
+1330 player_loc = 1
+1350 endproc
+
+
+REM ************************************* cmd_unlock()
+1400 proc cmd_unlock()
+1401 valid_cmd = true
+1405 print ""
+1410 if obj_loc(1) <> 0 then print "You don't have a key." : goto 1450
+1411 if player_loc <> 1 then print "Unlock what?  Maybe this isn't the place" : goto 1450
+1420 print "Without a moment of hesitation, you unlock the door. Freedom feels close."
+1430 loc_exit(1,1) = 10
+1440 loc_desc2$(1) = "Stairs lead to a second floor, but the south exit door is unlocked!"
+1450 endproc
 
 
 2000 proc display_room()
@@ -269,7 +301,7 @@ rem SKIP 0, zero is a special "nil" location
 
 rem name, n,s,e,w,u,d - some rooms are initially blocked (0)
 3030 data "Foyer"           ,0,0,2,3,0,0
-3035 data "a mostly empty foyer. There are doors to the east and the west."
+3035 data "a mostly empty foyer. There are doors to the east and west."
 3036 data "Stairs lead to a second floor, but it's too dark to go up without some light!"
 3040 data "Kitchen"         ,9,0,0,1,0,0
 3045 data "a fairly cute kitchen. A door leads north to a grand estate garden."
@@ -291,7 +323,7 @@ rem name, n,s,e,w,u,d - some rooms are initially blocked (0)
 3096 data "The windows rattle as thunder rumbles through the house. You can exit west."
 3110 data "Attic"           ,0,0,0,0,0,5
 3115 data "an attic full of newspapers, magazines, and boxes covered in cobwebs."
-3116 data "The area flashes brightly as lightning strikes outside."
+3116 data "The area flashes brightly as lightning strikes outside. Stairs lead back down."
 3120 data "Back Yard"       ,0,2,0,0,0,0
 3125 data "the back yard standing outside the kitchen door to your south."
 3126 data "Across the garden path to the north you see a dim light inside the greenhouse."
@@ -300,7 +332,7 @@ REM ************************************* set_objects()
 3500 proc set_objects()
 3510 rem objects and their locations (0=player,99=hidden)
 3530 for i = 1 to obj_cnt: read obj_loc(i), obj_desc$(i): next
-3540 move_key = int(rnd(1)*2) : obj_loc(1) = obj_loc(1) - move_key
+3540 move_key = int(rnd(1)*3) : obj_loc(1) = obj_loc(1) - move_key
 3590 endproc
 3600 data 8,"a key", 4,"an unlit lamp", 99,"a raw steak", 1,"a fidget spinner"
 
