@@ -1,17 +1,21 @@
 5 REM - Haunted Mansion by Dagen Brock
+6 graphics = false
 
 10 loc_cnt=9 : dim loc$(loc_cnt) : dim loc_exit(loc_cnt,6) : dim loc_desc$(loc_cnt) : dim loc_desc2$(loc_cnt)
 20 obj_cnt = 4 : dim obj_desc$(obj_cnt) : dim obj_loc(obj_cnt)
 30 restore
 50 init_display()
-60 print "Welcome to the Haunted Mansion"
-70 set_locations()
-80 player_loc = 1: wolf_act = true: player_alive = true : fridge_open = false : lamp_lit = false
-90 set_objects()
+55 if graphics then gfx_title()
+60 print "Welcome to the Haunted Mansion" : print "": print ""
+
+
+70 player_loc = 1 : player_alive = true : player_hidden = false
+75 wolf_act = true : ghost_act = true : fridge_open = false : lamp_lit = false
+80 set_locations() : set_objects()
 
 
 
-
+rem 91 obj_loc(3) =0
 
 
 
@@ -20,17 +24,28 @@ rem Main loop - input & parsing
 110 if player_alive = false then goto 350
 120 print "" : input "> "; in$ : print ""
 130 valid_cmd = false
+REM note we check many alternates
 140 if left$(in$,2) = "go" then cmd_go()
+141 if in$ = "north" then in$ = "go north" : cmd_go()
+142 if in$ = "south" then in$ = "go south" : cmd_go()
+143 if in$ = "east" then in$ = "go east" : cmd_go()
+144 if in$ = "west" then in$ = "go west" : cmd_go()
+145 if in$ = "up" then in$ = "go up" : cmd_go()
+146 if in$ = "down" then in$ = "down" : cmd_go()
+
 150 if left$(in$,3) = "inv" then cmd_inventory()
 160 if left$(in$,4) = "look" then cmd_look_objects()
 170 if left$(in$,4) = "take" then cmd_take_object()
 171 if left$(in$,3) = "get" then cmd_take_object()
 180 if left$(in$,4) = "drop" then cmd_drop_object()
+181 if left$(in$,5) = "throw" then cmd_drop_object()
 190 if left$(in$,4) = "help" then cmd_help()
 191 if left$(in$,1) = "?" then cmd_help()
 210 if in$ = "open fridge" then cmd_open_fridge()
 220 if in$ = "light lamp" then cmd_light_lamp()
 221 if in$ = "turn on lamp" then cmd_light_lamp()
+222 if in$ = "run" then cmd_run()
+223 if in$ = "hide" then cmd_hide()
 230 if left$(in$,3) = "eat" then cmd_nope()
 240 if left$(in$,3) = "quit" then end
 
@@ -43,7 +58,7 @@ rem Main loop - input & parsing
 REM ************ player death
 350 print "": print "You are dead.": print ""
 360 input "Would you like to play again? (y/n) "; in$ : print ""
-370 if in$ = "y" then goto 50
+370 if in$ = "y" then goto 30
 380 print "": print "Goodbye!" : end
 
 
@@ -59,7 +74,7 @@ REM ************************************* cmd_nope()
 REM ************************************* cmd_help()
 450 proc cmd_help()
 451 valid_cmd = true
-455 print "Try using commands like: go, take, drop, inventory, light, unlock."
+455 print "Try using commands like: go, take, drop, inventory, light, unlock, run, hide."
 460 print "I only understand lowercase words."
 465 endproc
 
@@ -72,10 +87,14 @@ REM ************************************* cmd_go()
 530 if right$(in$,4) = "east" then buf=loc_exit(player_loc,2)
 540 if right$(in$,4) = "west" then buf=loc_exit(player_loc,3)
 545 if right$(in$,2) = "up" then buf=loc_exit(player_loc,4)
-546 if right$(in$,4) = "down" then buf=loc_exit(player_loc,5)
+546 if right$(in$,8) = "upstairs" then buf=loc_exit(player_loc,4)
+547 if right$(in$,4) = "down" then buf=loc_exit(player_loc,5)
+548 if right$(in$,10) = "downstairs" then buf=loc_exit(player_loc,5)
 550 if buf <> 0
+551  if buf = 5 then if player_loc = 1 then ghost_steps = 5
 555  player_loc = buf
 556  if player_loc = 9 then wolf_steps = 3 
+557  player_hidden = false
 560 else 
 565  print "You cannot go in that direction."
 570 endif
@@ -124,8 +143,13 @@ REM ************************************* cmd_take_object()
 955 identify_object_strings()
 REM the above sets `obj` to object number in string or 0
 960 if obj_loc(obj) = player_loc
-965  obj_loc(obj) = 0 : print "You have picked up "; obj_desc$(obj)
-966  if obj = 3 then loc_desc2$(player_loc) = "It smells and there's an empty open fridge. The foyer is west."
+963  obj_loc(obj) = 0 : print "You have picked up "; obj_desc$(obj)
+964  if obj = 3 then loc_desc2$(player_loc) = "It smells and there's an empty open fridge. The foyer is west."
+965  if obj = 1 
+966   print "You got the KEY! As you pick it up the storm lessens and the house feels a little less gloomy."
+967   print "You only need to go out the front door to finally escape this trap of a house."
+968   ghost_act = false
+969  endif
 970 else
 975   print "You don't see that object in here." 
 980 endif
@@ -155,10 +179,31 @@ REM ************************************* cmd_light_lamp
 1150 endproc
 
 
+REM ************************************* cmd_run()
+1200 proc cmd_run()
+1201 valid_cmd = true
+
+1250 endproc
+
+
+REM ************************************* cmd_hide()
+1200 proc cmd_hide()
+1201 valid_cmd = true
+1210 if player_loc < 6 then if player_loc >8 then if ghost_act = false then print "There's nowhere to hide in this area." : goto 1250
+1220 player_hidden = true
+1230 if player_loc = 8 
+1240  print "You've found a spot in-between a stack of boxes to hide."
+1250 else 
+1260  print "You dive under the bed as quitely as you can and hide in the darkess."
+1270 endif
+1280 endproc
+
+
 2000 proc display_room()
 2010 print "" : cprint chr$(16);chr$(17); chr$(18); chr$(19); chr$(20); : print " ";loc$(player_loc)
 2020 print "" : print "You are in "; loc_desc$(player_loc) : print "": print loc_desc2$(player_loc)
 2030 if player_loc = 9 then handle_wolf()
+2040 if player_loc >= 5 then if player_loc <= 8 then handle_ghost()
 2100 endproc
 
 2500 proc handle_wolf()
@@ -189,7 +234,26 @@ REM ************************************* cmd_light_lamp
 2620 endif
 2630 endproc
 
-
+2700 proc handle_ghost()
+2705 print ""
+2710 if ghost_act = false
+2720  print "The coast is clear.  You should get out of this place!"
+2730 else
+2740  if player_hidden = true then ghost_steps = 6: print "The specter has moved away.  You should get going."
+2750  ghost_steps = ghost_steps - 1
+2755  if ghost_steps = 4 then print " ... "
+2760  if ghost_steps = 3 then print "You felt a chill. Something, not human, is approaching..."
+2770  if ghost_steps = 2 then print "What was that?!  You definitely heard a noise. It's not safe here."
+2780  if ghost_steps = 1 then print "It's COMING!  Run or hide, NOW!"
+2790  if ghost_steps = 0
+2800   print "There's a horrible crackling noise as the evil specter enters your body and "
+2810   print "breaks all your bones from the inside. Luckily you have an immediate"
+2820   print "heart attack and die from the pain.  ... wait no, that's not lucky at all."
+2830   print "" : print "Maybe next time you should run or hide."
+2840   player_alive = false : REM LOL DIE MOAR BRO!
+2850  endif
+2860 endif
+2870 endproc
 
 
 2999 end
@@ -217,14 +281,14 @@ rem name, n,s,e,w,u,d - some rooms are initially blocked (0)
 3064 data "a rustic greenhouse. Moonlight shines in from above."
 3065 data "The exit is to the south."
 3070 data "Upstairs Hallway",0,0,7,6,8,1
-3075 data "a hallway with doors to the east and west."
-3076 data "There's also another set of stairs leading up."
+3075 data "a hallway with large wood doors to the east and west."
+3076 data "There's also another set of stairs leading up and the stairs back down."
 3080 data "Small Bedroom"   ,0,0,5,0,0,0
 3085 data "a small bedroom with creaky floors."
-3086 data "It smells a bit moldy in here."
+3086 data "It smells a bit moldy in here. The hallway is back to your east."
 3090 data "Large Bedroom"   ,0,0,0,5,0,0
 3095 data "a great bedroom full of strange art which makes you uncomfortable."
-3096 data "The windows rattle as thunder rumbles through the house."
+3096 data "The windows rattle as thunder rumbles through the house. You can exit west."
 3110 data "Attic"           ,0,0,0,0,0,5
 3115 data "an attic full of newspapers, magazines, and boxes covered in cobwebs."
 3116 data "The area flashes brightly as lightning strikes outside."
@@ -254,3 +318,19 @@ REM ************************************* init_display()
 5556 cls:bitmap on:bitmap clear $2: text "Haunted Mansion"dim 2 color 3 to 50,5
 5557 print "":print"":print "":print "":print "":print ""
 5558 endproc
+
+REM ************************************* gfx_title()
+6000 proc gfx_title()
+6005 bitmap on
+6006 print "Loading...";
+6010 bload "title.img",$030000
+6020 bload "title.pal",$7C00
+6030 poke 1,1
+6040 for i=0 to 254
+6050  poke $D000+(i*4),peek($7C00+(i*4))
+6060  poke $D001+(i*4),peek($7C01+(i*4))
+6070  poke $D002+(i*4),peek($7C02+(i*4))
+6080 next
+6090 poke 1,0:poke $d103,$03
+6095 cls: for i=1 to 64: print "" : next
+6100 endproc
