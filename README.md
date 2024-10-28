@@ -8,6 +8,10 @@ You must find the key to open that door in order to leave the house!  Explore 9 
 
 Can I write Haunted Mansion in two days?  And if I do... can you escape it?  👻
 
+## And we did it!
+A complete adventure in the required time and it's simple but it was a lot of fun.  Take a look and if you have a Foenix 256 machine, please try it for yourself!
+![haunted-demo](./media/haunted-demo.gif)
+
 ## Details
 This game is a simple text adventure in SuperBasic for the F256 computer.
 
