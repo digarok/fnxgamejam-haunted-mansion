@@ -23,7 +23,7 @@ rem Main loop - input & parsing
 110 display_room()
 120 if player_alive = false then goto 340
 130 print:input "> ";in$ :print
-140 valid_cmd = false
+140 cmd_ok = false
 REM note we check many alternates
 150 if left$(in$,2) = "go" then cmd_go()
 151 if in$ = "north" then in$ = "go north" : cmd_go()
@@ -54,7 +54,7 @@ REM note we check many alternates
 250 if left$(in$,4) = "help" then cmd_help()
 251 if left$(in$,1) = "?" then cmd_help()
 
-290 if valid_cmd = false then print "What do you mean?":print
+290 if cmd_ok = false then print "What do you mean?":print
 300 goto 100
 
 
@@ -70,20 +70,20 @@ REM ************ play again?
 
 REM ********************* cmd_nope()
 400 proc cmd_nope()
-401 valid_cmd = true
+401 cmd_ok = true
 410 print "Nope.":print
 440 endproc
 
 REM ********************* cmd_help()
 450 proc cmd_help()
-451 valid_cmd = true
+451 cmd_ok = true
 455 print "Try using commands like: go, take, drop, inventory, light, unlock, run, hide."
 460 print:print "I only understand lowercase words.":print
 465 endproc
 
 REM ********************* cmd_go()
 500 proc cmd_go()
-501 valid_cmd = true
+501 cmd_ok = true
 505 buf = 0
 510 if right$(in$,5) = "north" then buf=loc_exit(player_loc,0)
 520 if right$(in$,5) = "south" then buf=loc_exit(player_loc,1)
@@ -106,7 +106,7 @@ REM ********************* cmd_go()
 
 REM ********************* cmd_look_objects()
 700 proc cmd_look_objects()
-701 valid_cmd = true
+701 cmd_ok = true
 705 found_obj = false
 710 for i=1 TO obj_cnt
 720 if obj_loc(i)=player_loc then print "  You see ";obj_desc$(i): print
@@ -116,7 +116,7 @@ REM ********************* cmd_look_objects()
 
 REM ********************* cmd_inventory()
 800 proc cmd_inventory()
-801 valid_cmd = true
+801 cmd_ok = true
 810 print "You are carrying: ":print
 820 empty_inv = true
 830 for i = 1 to obj_cnt
@@ -132,7 +132,7 @@ REM ********************* cmd_inventory()
 
 REM ********************* cmd_drop_object()
 900 proc cmd_drop_object()
-901 valid_cmd = true
+901 cmd_ok = true
 905 identify_object_strings()
 906 if obj = 2 then if lamp_lit = true then print "You can't drop a lit lamp!": goto 935
 910 if obj_loc(obj) = 0 
@@ -142,10 +142,9 @@ REM ********************* cmd_drop_object()
 930 endif
 935 endproc
  
-
 REM ********************* cmd_take_object()
 950 proc cmd_take_object()
-951 valid_cmd = true
+951 cmd_ok = true
 955 identify_object_strings()
 REM the above sets `obj` to object number in string or 0
 960 if obj_loc(obj) = player_loc
@@ -163,7 +162,7 @@ REM the above sets `obj` to object number in string or 0
 
 REM ********************* cmd_open_fridge
 1000 proc cmd_open_fridge()
-1001 valid_cmd = true
+1001 cmd_ok = true
 1005 if fridge_open = true then goto 1070
 1010 if player_loc <> 2
 1020  print "What fridge are you talking about?":print
@@ -177,7 +176,7 @@ REM ********************* cmd_open_fridge
 
 REM ********************* cmd_light_lamp
 1100 proc cmd_light_lamp()
-1101 valid_cmd = true
+1101 cmd_ok = true
 1105 if obj_loc(2) <> 0 then print "You don't have one." : goto 1150
 1110 lamp_lit = true
 1120 loc_desc2$(1) = "Stairs lead to a second floor, and with your lit lamp you can make your way up!"
@@ -187,7 +186,7 @@ REM ********************* cmd_light_lamp
 
 REM ********************* cmd_hide()
 1200 proc cmd_hide()
-1201 valid_cmd = true
+1201 cmd_ok = true
 1210 if player_loc < 6 then print "There's nowhere to hide in this area.":print:goto 1280
 1211 if player_loc >8 then print "That won't help you here.":print:goto 1280
 1212 if ghost_act = false then print "There's no need.":print:goto 1280
@@ -201,7 +200,7 @@ REM ********************* cmd_hide()
 
 REM ********************* cmd_run()
 1300 proc cmd_run()
-1301 valid_cmd = true
+1301 cmd_ok = true
 1310 if ghost_act = false then print "You don't need to do that." : goto 1350
 1311 if player_loc < 5 then print "There's no need." : goto 1350
 1312 if player_loc >8 then print "That won't help here." : goto 1350
@@ -213,7 +212,7 @@ REM ********************* cmd_run()
 
 REM ********************* cmd_unlock()
 1400 proc cmd_unlock()
-1401 valid_cmd = true
+1401 cmd_ok = true
 1405 print
 1410 if obj_loc(1) <> 0 then print "You don't have a key." : goto 1450
 1411 if player_loc <> 1 then print "Unlock what?  Maybe this isn't the place" : goto 1450
@@ -380,14 +379,16 @@ REM ********************* intro_story()
 
 REM ********************* end_story()
 5700 proc end_story()
-5705 bload "outside.bin",$010000
-5706 memcopy $019600,$400 to $007C00
-5710 poke 1,1
-5711 for i=0 to 254
-5712  poke $D000+(i*4),peek($7C00+(i*4)):poke $D001+(i*4),peek($7C01+(i*4)):poke $D002+(i*4),peek($7C02+(i*4))
-5713 next
-5714 poke 1,02100 : memcopy $019600,320*120 poke $01
-
+5703 if graphics_on
+5704  bload "outside.bin",$010000
+5705  memcopy $019600,$400 to $007C00
+5706  poke 1,1
+5707  for i=0 to 254
+5708   poke $D000+(i*4),peek($7C00+(i*4)):poke $D001+(i*4),peek($7C01+(i*4)):poke $D002+(i*4),peek($7C02+(i*4))
+5709  next
+5710  cls:for i= 1 to 60:print:next
+5711  poke 1,02100 : memcopy $019600,320*120 poke $01
+5712 endif
 
 5715 box_string("The End!")
 5716 if graphics_on then cls: for i=1 to 60 : print : next
@@ -400,8 +401,7 @@ REM ********************* end_story()
 5755  print: print "You feel something in your pocket and reach for it. It's a fidget spinner."
 5760  print: print "You give it a spin and can't help but laugh as you enjoy the walk home."
 5765 endif
-5770 print:print spc(35);"THE END"
-5775 print:print:print spc(27); "Thank you for playing!!!":print:print
+5770 print:print spc(35);"THE END":print:print:print spc(27); "Thank you for playing!!!":print:print
 5780 endproc
 
 REM ********************* box_string(s$)
