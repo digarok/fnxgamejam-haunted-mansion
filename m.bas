@@ -3,24 +3,25 @@
 7 REM  part of the October 2024 F256 Game Jam
 8 REM  big thanks to dwsJason for organizing!
 
-10 cls: rem prompt_options()
+10 cls: prompt_options() 
 20 loc_cnt=9 : dim loc$(loc_cnt) : dim loc_exit(loc_cnt,6) : dim loc_desc$(loc_cnt) : dim loc_desc2$(loc_cnt)
 25 obj_cnt = 4 : dim obj_desc$(obj_cnt) : dim obj_loc(obj_cnt)
+30 if graphics_on then set_gfx_files()
 
-30 restore
-50 init_display()
-rem 55 if graphics_on then gfx_title()
+50 restore
+55 init_display()
 
 70 player_loc = 1 : player_alive = true : player_hidden = false : player_win = false
-75 wolf_act = true : ghost_act = true : fridge_open = false : lamp_lit = false
+75 wolf_act = true : ghost_act = true : fridge_open = false : lamp_lit = false : last_loc=0
 80 set_locations() : set_objects()
+85 if graphics_on then for i=1 to 60 : print:next
 90 intro_story()
 
 
 rem Main loop - input & parsing
 100 if player_win = true then goto 320
 110 display_room()
-120 if player_alive = false then goto 350
+120 if player_alive = false then goto 340
 130 print:input "> ";in$ :print
 140 valid_cmd = false
 REM note we check many alternates
@@ -64,28 +65,23 @@ REM ************ player death
 340 print: print "You are dead.": print
 REM ************ play again?
 350 input "Would you like to play again? (y/n) "; in$ : print
-360 if in$ = "y" then goto 30
-370 print: print "Goodbye!" : end
+360 if in$ = "y" then goto 50
+370 print: print "Goodbye!" : bitmap off: end
 
-
-REM ************************************* cmd_nope()
+REM ********************* cmd_nope()
 400 proc cmd_nope()
 401 valid_cmd = true
-405 n = int(rnd(1)*3)
-410 if n = 0 then print "Nope."
-420 if n = 1 then print "No way."
-430 if n = 2 then print "Nah."
-435 print
+410 print "Nope.":print
 440 endproc
 
-REM ************************************* cmd_help()
+REM ********************* cmd_help()
 450 proc cmd_help()
 451 valid_cmd = true
 455 print "Try using commands like: go, take, drop, inventory, light, unlock, run, hide."
 460 print:print "I only understand lowercase words.":print
 465 endproc
 
-REM ************************************* cmd_go()
+REM ********************* cmd_go()
 500 proc cmd_go()
 501 valid_cmd = true
 505 buf = 0
@@ -99,7 +95,7 @@ REM ************************************* cmd_go()
 548 if right$(in$,10) = "downstairs" then buf=loc_exit(player_loc,5)
 550 if buf <> 0
 551  if buf = 5 then if player_loc = 1 then ghost_steps = 5
-555  player_loc = buf
+555  last_loc = player_loc : player_loc = buf
 556  if player_loc = 9 then wolf_steps = 3 
 557  player_hidden = false
 558  if player_loc = 10 then player_win = true
@@ -108,7 +104,7 @@ REM ************************************* cmd_go()
 570 endif
 600 endproc
 
-REM ************************************* cmd_look_objects()
+REM ********************* cmd_look_objects()
 700 proc cmd_look_objects()
 701 valid_cmd = true
 705 found_obj = false
@@ -118,7 +114,7 @@ REM ************************************* cmd_look_objects()
 740 endproc
 
 
-REM ************************************* cmd_inventory()
+REM ********************* cmd_inventory()
 800 proc cmd_inventory()
 801 valid_cmd = true
 810 print "You are carrying: ":print
@@ -134,7 +130,7 @@ REM ************************************* cmd_inventory()
 895 endproc
 
 
-REM ************************************* cmd_drop_object()
+REM ********************* cmd_drop_object()
 900 proc cmd_drop_object()
 901 valid_cmd = true
 905 identify_object_strings()
@@ -147,7 +143,7 @@ REM ************************************* cmd_drop_object()
 935 endproc
  
 
-REM ************************************* cmd_take_object()
+REM ********************* cmd_take_object()
 950 proc cmd_take_object()
 951 valid_cmd = true
 955 identify_object_strings()
@@ -165,7 +161,7 @@ REM the above sets `obj` to object number in string or 0
 980 endif
 990 endproc
 
-REM ************************************* cmd_open_fridge
+REM ********************* cmd_open_fridge
 1000 proc cmd_open_fridge()
 1001 valid_cmd = true
 1005 if fridge_open = true then goto 1070
@@ -179,7 +175,7 @@ REM ************************************* cmd_open_fridge
 1060 endif
 1070 endproc
 
-REM ************************************* cmd_light_lamp
+REM ********************* cmd_light_lamp
 1100 proc cmd_light_lamp()
 1101 valid_cmd = true
 1105 if obj_loc(2) <> 0 then print "You don't have one." : goto 1150
@@ -189,9 +185,7 @@ REM ************************************* cmd_light_lamp
 1140 print "  Your lamp is lit! You feel a little less afraid.": print
 1150 endproc
 
-
-
-REM ************************************* cmd_hide()
+REM ********************* cmd_hide()
 1200 proc cmd_hide()
 1201 valid_cmd = true
 1210 if player_loc < 6 then print "There's nowhere to hide in this area.":print:goto 1280
@@ -205,7 +199,7 @@ REM ************************************* cmd_hide()
 1270 endif
 1280 endproc
 
-REM ************************************* cmd_run()
+REM ********************* cmd_run()
 1300 proc cmd_run()
 1301 valid_cmd = true
 1310 if ghost_act = false then print "You don't need to do that." : goto 1350
@@ -217,8 +211,7 @@ REM ************************************* cmd_run()
 1330 player_loc = 1
 1350 endproc
 
-
-REM ************************************* cmd_unlock()
+REM ********************* cmd_unlock()
 1400 proc cmd_unlock()
 1401 valid_cmd = true
 1405 print
@@ -235,7 +228,27 @@ REM ************************************* cmd_unlock()
 2020 print: print "You are in "; loc_desc$(player_loc) :print: print loc_desc2$(player_loc)
 2030 if player_loc = 9 then handle_wolf()
 2040 if player_loc >= 5 then if player_loc <= 8 then handle_ghost()
-2100 endproc
+2050 if graphics_on
+2055  poke 1,2
+2056  for i = 80*15 to (80*33)-1: poke $c000+i,$20 :next
+2057  poke 1,0
+2060  if player_loc <> last_loc
+2070   adr = room_gfx_loc(player_loc)
+2080   memcopy adr,$9600 to $010000
+2090   memcopy adr+$9600,$400 to $007C00
+2100   memcopy $019600,320*120 poke $01
+rem copy_pal()
+2110   poke 1,1
+2111   for i=0 to 254
+2112    poke $D000+(i*4),peek($7C00+(i*4))
+2113    poke $D001+(i*4),peek($7C01+(i*4))
+2114    poke $D002+(i*4),peek($7C02+(i*4))
+2115   next
+2116  poke 1,0
+
+2120  endif
+2190 endif
+2200 endproc
 
 2500 proc handle_wolf()
 2505 print
@@ -289,7 +302,7 @@ REM ************************************* cmd_unlock()
 
 2999 end
 
-REM ************************************* set_locations()
+REM ********************* set_locations()
 rem SKIP 0, zero is a special "nil" location
 3000 proc set_locations()
 3010 for n = 1 to loc_cnt: read loc$(n)
@@ -308,7 +321,7 @@ rem name, n,s,e,w,u,d - some rooms are initially blocked (0)
 3050 data "Living Room"     ,0,0,1,0,0,0
 3055 data "a dark room full of dusty books and furniture. There's nothing here."
 3056 data "You feel the a draft from the windows as the storm starts to blow harder."
-3060 data "Green House"     ,0,2,0,0,0,0
+3060 data "Green House"     ,0,9,0,0,0,0
 3064 data "a rustic greenhouse. Moonlight shines in from above."
 3065 data "The exit is to the south."
 3070 data "Upstairs Hallway",0,0,7,6,8,1
@@ -327,15 +340,15 @@ rem name, n,s,e,w,u,d - some rooms are initially blocked (0)
 3125 data "the back yard standing outside the kitchen door to your south."
 3126 data "Across the garden path to the north you see a dim light inside the greenhouse."
 
-REM ************************************* set_objects()
+REM ********************* set_objects()
 3500 proc set_objects()
-3510 rem objects and their locations (0=player,99=hidden)
+rem objects and their locations (0=player,99=hidden)
 3530 for i = 1 to obj_cnt: read obj_loc(i), obj_desc$(i): next
 3540 move_key = int(rnd(1)*3) : obj_loc(1) = obj_loc(1) - move_key
 3590 endproc
-3600 data 8,"a key", 4,"an unlit lamp", 99,"a raw steak", 1,"a fidget spinner"
+3600 data 8,"a key", 4,"a lamp", 99,"a raw steak", 1,"a fidget spinner"
 
-REM ************************************* identify_object_strings()
+REM ********************* identify_object_strings()
 3700 proc identify_object_strings()
 3710 obj = 0
 3720 if right$(in$,3) = "key" then obj=1
@@ -345,28 +358,13 @@ REM ************************************* identify_object_strings()
 3750 if right$(in$,7) = "spinner" then obj=4
 3790 endproc
 
-REM ************************************* init_display()
+REM ********************* init_display()
 5555 proc init_display()
 5556 cls:bitmap on:bitmap clear $2: text "Haunted Mansion"dim 2 color 3 to 50,5
 5557 print:print:print:print:print:print
 5558 endproc
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-REM ************************************* intro_story()
+REM ********************* intro_story()
 5600 proc intro_story()
 5610 box_string("The Story")
 5620 print : print "While walking home from a party, a thunderstorm suddenly builds up around you."
@@ -377,11 +375,22 @@ REM ************************************* intro_story()
 5650 print "You must find the key to open that door in order to leave the house!": print
 5660 print "Be careful. You might not be alone.":print:print
 5670 print:input "Press return to start.",in$:cls:for i=1 to 7:print:next
+5680 if graphics_on then for i = 1 to 60 :print:next
 5690 endproc
 
-REM ************************************* end_story()
+REM ********************* end_story()
 5700 proc end_story()
-5710 box_string("The End!")
+5705 bload "outside.bin",$010000
+5706 memcopy $019600,$400 to $007C00
+5710 poke 1,1
+5711 for i=0 to 254
+5712  poke $D000+(i*4),peek($7C00+(i*4)):poke $D001+(i*4),peek($7C01+(i*4)):poke $D002+(i*4),peek($7C02+(i*4))
+5713 next
+5714 poke 1,02100 : memcopy $019600,320*120 poke $01
+
+
+5715 box_string("The End!")
+5716 if graphics_on then cls: for i=1 to 60 : print : next
 5720 print:print "You walk outside and finally breath a sigh of relief.":print
 5725 print "You start walking home. Thankfully the sky has cleared.  It's actually a "
 5730 print "beautiful evening.": print
@@ -395,23 +404,7 @@ REM ************************************* end_story()
 5775 print:print:print spc(27); "Thank you for playing!!!":print:print
 5780 endproc
 
-REM ************************************* gfx_title()
-6000 proc gfx_title()
-6005 bitmap on
-6006 print "Loading...";
-6010 bload "title.img",$030000
-6020 bload "title.pal",$7C00
-6030 poke 1,1
-6040 for i=0 to 254
-6050  poke $D000+(i*4),peek($7C00+(i*4))
-6060  poke $D001+(i*4),peek($7C01+(i*4))
-6070  poke $D002+(i*4),peek($7C02+(i*4))
-6080 next
-6090 poke 1,0:poke $d103,$03
-6095 cls: for i=1 to 64: print: next
-6100 endproc
-
-REM ************************************* box_string(s$)
+REM ********************* box_string(s$)
 7000 proc box_string(s$)
 7010 l = len(s$)
 7020 cprint chr$($a9);: for i = 0 to l+1 : cprint chr$($ad); : next : cprint chr$($aa)
@@ -419,16 +412,28 @@ REM ************************************* box_string(s$)
 7040 cprint chr$($ab);: for i = 0 to l+1 : cprint chr$($ad); : next : cprint chr$($ac)
 7100 endproc
 
-REM ************************************* prompt_options()
+REM ********************* prompt_options()
 9000 proc prompt_options()
 9010 print:print:print spc(15);:input "Would you like graphics? (y/N)",in$
 9020 if in$ = "y" then graphics_on = true
-9025 print:print spc(20); "Graphics: ";
-9026 if graphics_on then print "on"
-9027 if graphics_on = false then print "off"
-9030 print:print spc(16);:input "Would you like sound? (y/N)",in$
-9040 if in$ = "y" then sound_on = true
-9045 print:print spc(20); "Sound: ";
-9046 if sound_on then print "on"
-9027 if sound_on = false then print "off"
 9050 endproc
+
+9100 proc set_gfx_files()
+9110 dim room_gfx$(10):dim room_gfx_loc(10)
+9120 room_gfx$(0) = ""
+9130 room_gfx$(1) = "foyer": room_gfx_loc(1) = $022C00
+9140 room_gfx$(2) = "kitchen": room_gfx_loc(2) = $022C00 + ($9A00*1)
+9150 room_gfx$(3) = "lr": room_gfx_loc(3) = $022C00 + ($9A00*2)
+9160 room_gfx$(4) = "greenhouse": room_gfx_loc(4) = $022C00 + ($9A00*3)
+9170 room_gfx$(5) = "hallway": room_gfx_loc(5) = $022C00 + ($9A00*4)
+9180 room_gfx$(6) = "smallbr": room_gfx_loc(6) = $022C00 + ($9A00*5)
+9190 room_gfx$(7) = "largebr": room_gfx_loc(7) =$022C00 + ($9A00*6)
+9200 room_gfx$(8) = "attic": room_gfx_loc(8) = $022C00 + ($9A00*7)
+9210 room_gfx$(9) = "backyard": room_gfx_loc(9) = $022C00 + ($9A00*8)
+
+9290 print "LoADiNG ..."
+9300 for i = 1 to 9
+9310  print room_gfx$(i) + ".bin",room_gfx_loc(i)
+9320  bload room_gfx$(i) + ".bin",room_gfx_loc(i)
+9399 next
+9400 endproc

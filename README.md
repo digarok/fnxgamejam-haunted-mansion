@@ -22,3 +22,6 @@ Enter commands in lowercase only!
 Try `help` to see basic commands.  You can go north, south, west, east, up, and down.
 
 Good luck and thanks for playing!
+
+## GRAPHICS UPDATE!!! 
+If you want to play with graphics, you must also copy all the ".bin" files to the same drive as the basic program.  Then run as normal and choose graphics mode.
